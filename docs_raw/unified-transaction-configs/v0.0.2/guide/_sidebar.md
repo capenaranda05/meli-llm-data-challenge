@@ -1,0 +1,5 @@
+- [**Inicio**](README.md)
+- [Carga de configuraciones](howto.md#carga-de-configuracion)
+- [Carga de grupo de usuarios](howto.md#carga-de-grupo-de-usuarios)
+- [Consideraciones](howto.md#consideraciones)
+- [Actualizar documentación](howto.md#actualizacion-de-configuraciones-en-mobile-flow-manager)

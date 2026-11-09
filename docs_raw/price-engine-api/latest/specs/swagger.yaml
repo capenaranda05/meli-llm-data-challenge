@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: Price Engine API
+  version: 0.1.0
+  description: |-
+    - **Iniciativa:** Commerce Operations & Support
+    - **Proyecto:** Atlas
+    - **CommerceHub Application:** price-engine-api
+    - **Escalation OpsGenie:** escalation_operations_central
+
+    Aplicación destinada a gestionar y modelar los ajustes de configuraciones de ventas del seller.
+
+    Para más información funcional consultar la sección Guide de nuestra documentación.
+
+servers:
+  - url: http://price-engine.commerce-hub.com
+    description: PRODUCCION
+
+tags:
+  - name: config adjustments
+    description: Endpoints disponibles para interactuar con los ajustes de configuraciones de ventas del seller
+
+paths:
+  /sites/{site_id}/sellers/{seller_id}/services/{service_id}/coverage/v1:
+    get:
+      tags:
+        - config adjustments
+      summary: Obtención del estado del ajuste de configuracion de cobertura del seller
+      description: |-
+        **Responsabilidad**<br/>
+        Devolver un array con las zonas del seller moderado por cobertura.<br/>
+
+        **Limitaciones**<br/>
+        Si el seller no tiene ajustes de configuracion de cobertura activos, este endpoint devolverá un array vacío.<br/>
+      operationId: GetActiveCoverageAdjustmentsBySeller
+      parameters:
+        - $ref: '#/components/parameters/SiteID'
+        - $ref: '#/components/parameters/SellerID'
+        - $ref: '#/components/parameters/ServiceID'
+        - $ref: '#/components/parameters/Version'
+      responses:
+        '200':
+          $ref: '#/components/responses/StatusOKCfgAdjustmentsGET'
+        '400':
+          $ref: '#/components/responses/BadRequestCfgAdjustmentsGET'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    SiteID:
+      in: path
+      name: site_id
+      description: ID del Site.
+      required: true
+      schema:
+        type: string
+        enum: [ MLA, MLB, MLC, MCO, MLU, MPE, MLM, MEC ]
+        example: MLA
+    SellerID:
+      in: path
+      name: service_id
+      description: ID servicio relacionado al seller.
+      required: true
+      schema:
+        type: integer
+        example: 8472965103
+    ServiceID:
+      in: path
+      name: seller_id
+      description: ID del seller que genera el token.
+      required: true
+      schema:
+        type: integer
+        example: 8472965102
+    Version:
+      in: header
+      name: Accept-Version
+      description: Versión del endpoint.
+      required: true
+      schema:
+        type: string
+        example: "v1"
+
+  responses:
+    StatusOKCfgAdjustmentsGET:
+      description: Zonas moderadas devueltas exitosamente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/models/Zones'
+    BadRequestCfgAdjustmentsGET:
+      description: Parámetro inválido (revisar mensaje de retorno)
+      content:
+        application/json:
+          schema:
+            $ref: '#/models/RequestError'
+          examples:
+            InvalidSellerID:
+              value:
+                code: "bad_request"
+                message: "invalid seller_id"
+            InvalidSiteID:
+              value:
+                code: "bad_request"
+                message: "invalid site_id"
+            InvalidBody:
+              value:
+                code: "bad_request"
+                message: "invalid body"
+    InternalServerError:
+      description: Error no controlado del lado del servidor.
+      content:
+        application/json:
+          schema:
+            $ref: '#/models/RequestError'
+          example:
+            code: "internal_server_error"
+            message: "can't get config adjustment"
+
+models:
+  RequestError:
+    type: object
+    properties:
+      code:
+        type: string
+        description: Código de respuesta
+        enum: [ bad_request, internal_server_error ]
+      message:
+        type: string
+        description: Mensaje de respuesta
+  Zones:
+    type: array
+    items:
+        description: Zone
+        type: string

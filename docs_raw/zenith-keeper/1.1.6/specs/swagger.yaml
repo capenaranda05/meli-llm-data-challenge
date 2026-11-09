@@ -1,0 +1,560 @@
+openapi: 3.0.1
+info:
+  title: fresh-products-api
+  description: Fresh Products API Documentation
+  contact:
+    name: Fresh Products Documentation
+    email: freshproducts@vendorsync.com
+  version: 0.0.1
+servers:
+  - url: 'http://localhost:8080'
+    description: Scope local
+paths:
+  /api/v1/fresh-products/inboundorder:
+    post:
+      tags:
+        - InboundOrder
+      summary: Insert batch in fulfillment warehouse
+      operationId: addBachOfProductsToStock
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsertBatchRequestDTO'
+        required: true
+      responses:
+        '201':
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsertBatchResponseDTO'
+    put:
+      tags:
+        - InboundOrder
+      summary: Update batch in fulfillment warehouse
+      operationId: updateBachOfProductsToStock
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsertBatchRequestDTO'
+        required: true
+      responses:
+        '201':
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsertBatchResponseDTO'
+  /api/v1/fresh-products:
+    get:
+      tags:
+        - Products
+      summary: Get complete products list
+      operationId: productList
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductDTO'
+        '404':
+          description: List Not found
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/fresh-products/list-category{category}:
+    get:
+      tags:
+        - Products
+      summary: Get products list sorted by category
+      operationId: productListForCategory
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductDTO'
+        '404':
+          description: List Not found
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/fresh-products/orders:
+    post:
+      tags:
+        - Products
+      summary: Inserts order with products list
+      operationId: addProductListOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseDTO'
+        required: true
+      responses:
+        '201':
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricePurchaseOrderDTO'
+        '400':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/fresh-products/orders{idOrder}:
+    get:
+      tags:
+        - Products
+      summary: Get products in the order
+      operationId: productListOrder
+      parameters:
+        - name: idOrder
+          in: path
+          required: true
+          schema:
+            type: object
+            format: Long
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductDTO'
+    put:
+      tags:
+        - Products
+      summary: Update order with products list
+      operationId: updateExistProductListOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseDTO'
+        required: true
+      parameters:
+        - name: idOrder
+          in: path
+          required: true
+          schema:
+            type: object
+            format: Long
+      responses:
+        '201':
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricePurchaseOrderDTO'
+        '400':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/fresh-products/list{productId}/{sort}:
+    get:
+      tags:
+        - ProductsList
+      summary: Get products list with all the batchs where products appear
+      operationId: searchAllProductsBatch
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sort
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductBatchsResponseDTO'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/fresh-products/warehouse{productId}:
+    get:
+      tags:
+        - Warehouse
+      summary: Get product stock in all warehouse it appears
+      operationId: searchQuantityOfProductsByWarehouse
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductQuantityDTOResp'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/fresh-products/due-date{quantityOfDays}:
+    get:
+      tags:
+        - DueDate
+      summary: Get batch stock sorted by due date
+      operationId: searchAllBatchsByDueDate
+      parameters:
+        - name: quantityOfDays
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchStockDTOResp'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v1/fresh-products/due-date/list{quantityOfDays}/{category}/{sort}:
+    get:
+      tags:
+        - DueDate
+      summary: Get batch stock sorted by due date and filtered by category
+      operationId: searchAllBatchsByCategory
+      parameters:
+        - name: quatintyOfDays
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sort
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchStockDTOResp'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+  /auth/sign-in:
+    post:
+      tags:
+        - Auth
+      summary: User and password validation
+      operationId: sign_in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                type: object
+  /auth/sign-up:
+    post:
+      tags:
+        - Auth
+      summary: User and password validation for a new user
+      operationId: sign_up
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                type: object
+  /ping:
+    get:
+      tags:
+        - Healthcheck
+      summary: Ping healthcheck
+      operationId: ping
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+
+components:
+  schemas:
+    InsertBatchRequestDTO:
+      type: object
+      properties:
+        inboundOrder:
+          $ref: '#/components/schemas/InboundOrderDTO'
+    BatchDTO:
+      type: object
+      properties:
+        batchNumber:
+          type: object
+          format: Long
+        productId:
+          type: string
+        currentTemperature:
+          type: number
+        minimumTemperature:
+          type: number
+        initialQuantity:
+          type: integer
+        currentQuantity:
+          type: integer
+        manufacturingDate:
+          type: object
+          format: LocalDate
+        manufacturingTime:
+          type: object
+          format: LocalDateTime
+        dueDate:
+          type: object
+          format: LocalDate
+    InsertBatchResponseDTO:
+      type: object
+      properties:
+        batchStock:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchDTO'
+    SectionDTO:
+      type: object
+      properties:
+        sectionCode:
+          type: string
+        warehouseCode:
+          type: string
+    InboundOrderDTO:
+      type: object
+      properties:
+        orderNumber:
+          type: object
+          format: Long
+        orderDate:
+          type: object
+          format: LocalDate
+        section:
+          $ref: '#/components/schemas/SectionDTO'
+        batchStock:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchDTO'
+    ProductDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: object
+          format: Double
+    OrderStatusDTO:
+      type: object
+      properties:
+        statusCode:
+          type: string
+    ProductsDTO:
+      type: object
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+    PurchaseOrderDTO:
+      type: object
+      properties:
+        date:
+          type: object
+          format: LocalDate
+        buyerId:
+          type: string
+        orderStatus:
+          $ref: '#/components/schemas/OrderStatusDTO'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductsDTO'
+    PurchaseDTO:
+      type: object
+      properties:
+        purchaseOrder:
+          $ref: '#/components/schemas/PurchaseOrderDTO'
+    PricePurchaseOrderDTO:
+      type: object
+      properties:
+        totalPrice:
+          type: object
+          format: Long
+    SectionDTOResp:
+      type: object
+      properties:
+        sectionCode:
+          type: string
+        warehouseCode:
+          type: string
+    BatchDTOResp:
+      type: object
+      properties:
+        batchNumber:
+          type: object
+          format: Long
+        currentQuantity:
+          type: integer
+        dueDate:
+          type: object
+          format: LocalDate
+        batchStock:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchDTO'
+    ProductBatchsResponseDTO:
+      type: object
+      properties:
+        section:
+          $ref: '#/components/schemas/SectionDTOResp'
+        productId:
+          type: string
+        batchDTORespList:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchDTOResp'
+    WarehouseDTOResp:
+      type: object
+      properties:
+        warehouseCode:
+          type: string
+        totalQuantity:
+          type: integer
+    ProductQuantityDTOResp:
+      type: object
+      properties:
+        productId:
+          type: string
+        warehouses:
+          type: array
+          items:
+            $ref: '#/components/schemas/WarehouseDTOResp'
+    BatchStockDTOResp:
+      type: object
+      properties:
+        batchStock:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchDueDateDTOResp'
+    BatchDueDateDTOResp:
+      type: object
+      properties:
+        batchNumber:
+          type: object
+          format: Long
+        productId:
+          type: string
+        productTypeId:
+          type: string
+        dueDate:
+          type: object
+          format: LocalDate
+        currentQuantity:
+          type: integer
+        section:
+          type: string
+    SignInRequestDTO:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    UserRole:
+      type: object
+      properties:
+        role:
+          type: string
+    SignUpRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        lastName:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        warehouseId:
+          type: string

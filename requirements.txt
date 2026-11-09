@@ -1,0 +1,5 @@
+# Core dependencies for parsing OpenAPI/Swagger specs and data validation
+PyYAML>=6.0,<7.0
+
+# Optional: Only required if re-generating synthetic Q&A live via Google Cloud Vertex AI (--ignore-cache)
+google-cloud-aiplatform>=1.60.0

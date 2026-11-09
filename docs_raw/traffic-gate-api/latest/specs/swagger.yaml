@@ -1,0 +1,393 @@
+openapi: 3.0.1
+info:
+  title: traffic-gate-api
+  description: This API gathers IP addresses blocked by rules of ratelimit applied in AWS WAF and checks if they need to be whitelisted or not.
+  contact:
+    name: Equipo Obsec Amenazas Externas
+    email: observabilitysec_externals@retailhub.com
+  version: 1.7.0
+servers:
+  - url: https://prod_traffic-gate-api.retailhubapps.io
+  - url: https://internal-api.retailhub.com/traffic-gate/prod
+tags:
+  - name: block
+    description: Info and Stats about IP Addresses blocked
+  - name: whitelist
+    description: Whitelist an IP address
+  - name: job
+    description: Endpoints used by the jobs and BigQ.
+  - name: ping
+    description: Check if the application is online
+security:
+  - ApiKeyAuth: []
+paths:
+  /v1/get-blocks-by-ip:
+    post:
+      tags:
+        - block
+      summary: Get number of blocks over specific IP address
+      description: Este servicio se encarga de buscar la cantidad de bloqueos que se han realizado sobre una misma dirección ip para un determinado rango de tiempo. En caso que no se especifique tiempo en la solicitud, se toma por defecto una semana atrás. Internamente esto funciona consultando la cantidad de registros existentes de una dirección IP en la tabla blacklist de la base de datos.
+      operationId: getBlocksByIP
+      requestBody:
+        description: IP address that will be analyzed.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ip:
+                  type: string
+                  example: 192.168.0.1
+                begin_time:
+                  type: string
+                  example: 2021-12-01 12:00:00
+                end_time:
+                  type: string
+                  example: 2021-12-01 12:00:00
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Block"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/get-historic-blocks-by-ip:
+    post:
+      tags:
+        - block
+      summary: Get historical info about specific IP Address.
+      description: Este servicio se encarga de buscar la cantidad total de bloqueos que se han realizado sobre una misma dirección ip; a diferencia del endpoint /get-blocks-by-ip, este servicio no filtra por rango de tiempo sino que devuelve el historial completo de bloqueos.
+      operationId: getHistoricBlocksByIP
+      requestBody:
+        description: IP address that will be analyzed.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ip:
+                  type: string
+                  example: 192.168.0.1
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Block"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/blocked/ip:
+    post:
+      tags:
+        - block
+      summary: Check if an IP address is blocked.
+      description: Este servicio se encarga de validar si una dirección IP se encuentra bloqueada actualmente por alguna regla de ratelimit y devuelve el Web_ACL asociado.
+      operationId: getBlockedIP
+      requestBody:
+        description: IP address that will be analyzed.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: string
+                  example: 192.168.0.1
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_blocked:
+                    type: boolean
+                  web_acls:
+                    type: array
+                    items:
+                      type: string
+                      example: WAF_WACL_API
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/whitelist:
+    put:
+      tags:
+        - whitelist
+      summary: Add an IP address to whitelist.
+      description: Este servicio se utiliza para enviar manualmente una o más direcciones IPs a la whitelist de las reglas de un scope específico. Estas direcciones son guardadas en la base de datos en la tabla 'ip' con una información por defecto y con la columna 'manually_added' en true.
+      operationId: whitelistIP
+      requestBody:
+        description: IP address that will be whitelisted.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ips:
+                  type: array
+                  items:
+                    type: string
+                    example: 192.168.0.1
+                description:
+                  type: string
+                scope:
+                    type: string
+                    enum:
+                      - api
+                      - front
+                      - pci
+                      - pci-global
+        required: true
+      responses:
+        "201":
+          description: Successful operation
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /whitelist:
+    post:
+      tags:
+        - job
+      summary: Retrieve the blocked IPs and queue them to be analyzed
+      description: Este servicio web se encarga de obtener las direcciones ips bloqueadas por las reglas en el WAF, que están asociadas a determinado scope o iniciativa (front, api, pci, pci_global) y enviarlas a una cola para su posterior análisis.
+      operationId: whitelist
+      parameters:
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum:
+              - api
+              - front
+              - pci
+              - pci-global
+          description: The scope to check.
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /whitelist/process:
+    post:
+      tags:
+        - job
+      summary: Analyze the blocked IPs and whitelist them if neccesary.
+      description: Recibe las direcciones IP que fueron encoladas en el endpoint de /whitelist, las analiza y determina si se deben agregar a whitelist o no.
+      operationId: whitelistProcess
+      requestBody:
+        description: Mensage entregado por la BigQ con IP a analizar y ratelimit asociado
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BQNotification'
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /whitelist/purge:
+    post:
+      tags:
+        - job
+      summary: Check if the whitelisted IPs should be removed from the whitelist.
+      description: Se encarga de actualizar la metadata de las direcciones IP en whitelist y determinar cuál debería ser removida o continuar en whitelist.
+      operationId: whitelistPurge
+      parameters:
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum:
+              - api
+              - front
+              - pci
+              - pci-global
+          description: The scope to check.
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ping:
+    get:
+      tags:
+        - ping
+      summary: Check if the application is online.
+      operationId: ping
+      responses:
+        "200":
+          description: pong
+          content:
+            application/json:
+              schema:
+                type: string
+                example: pong
+components:
+  securitySchemes:
+
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Tiger-Token
+
+  schemas:
+    BQNotification:
+      type: object
+      properties:
+        topic:
+          type: string
+          description: Tópico de la BigQ
+          example: process-blocks.traffic-gate-api
+        cluster:
+          type: string
+          description: Cluster de la BigQ
+          example: default07
+        consumer:
+          type: string
+          description: endpoint que consume info de la cola
+          example: /whitelist/process
+        id:
+          type: string
+          description: uuid genérico asignado por la BigQ al mensaje
+          example: 123e4567-e89b-12d3-a456-426614174000
+        msg:
+          $ref: '#/components/schemas/BQMessageContent'
+    BQMessageContent:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum:
+              - api
+              - front
+              - pci
+              - pci-global
+        ip:
+          type: string
+          description: Dirección IP a analizar
+          example: 35.227.35.77
+        rule:
+          $ref: '#/components/schemas/RatelimitBlockingIp'
+    RatelimitBlockingIp:
+      type: object
+      description: Regla de ratelimit bloqueando direcciones IP
+      properties:
+        ID:
+          type: string
+          description: Id de la regla de ratelimit en el WAF
+          example: 27
+        Name:
+          type: string
+          description: Nombre de la regla de ratelimit
+          example: RATE_RETAILHUB_COUNTRIES_API
+        WafId:
+          type: string
+          example: RETAILHUB_COUNTRIES_API
+        WebAcl:
+          type: string
+          description: Nombre de la WEB_ACL asociada a la regla en el WAF
+          example: WAF_WACL_API
+    Block:
+      type: object
+      properties:
+        ip:
+          type: string
+          example: 192.168.0.1
+        cloud:
+          type: string
+        reverse_dns:
+          type: string
+        creation_date:
+          type: string
+          example: 2021-12-01 12:00:00
+        deletion_date:
+          type: string
+          example: 2021-12-01 12:00:00
+        whitelisted:
+          type: boolean
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: bad_input

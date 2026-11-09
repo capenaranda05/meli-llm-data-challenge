@@ -1,0 +1,59 @@
+{
+  "dataset_counts": {
+    "train_cpt_rows": 71,
+    "train_sft_rows": 213,
+    "eval_in_domain_rows": 59,
+    "eval_out_of_domain_rows": 24,
+    "total_sft_eval_rows": 296
+  },
+  "traceability_audit": {
+    "traceability_coverage_pct": 100.0,
+    "missing_source_files": 0,
+    "invalid_line_ranges": 0
+  },
+  "data_leakage_audit": {
+    "train_vs_eval_in_chunk_overlap": 0,
+    "train_vs_eval_ood_chunk_overlap": 0,
+    "train_vs_eval_ood_service_overlap": 0,
+    "near_duplicate_questions_gt_085_jaccard": 0,
+    "mean_max_question_jaccard_train_vs_eval": 0.119
+  },
+  "quality_and_grounding": {
+    "mean_lexical_grounding_score": 0.5861,
+    "category_distribution": {
+      "factual_qa": 98,
+      "troubleshooting_or_usage": 99,
+      "abstention_unanswerable": 99
+    },
+    "language_distribution": {
+      "en": 227,
+      "es": 69
+    },
+    "generator_distribution": {
+      "vertex_gemini_2.5_flash": 296
+    }
+  },
+  "status": "PASSED",
+  "ingestion_summary": {
+    "total_files_scanned": 107,
+    "by_status": {
+      "dropped_artifact": 34,
+      "dropped_stub_or_todo": 6,
+      "dropped_exact_dup": 16,
+      "kept_canonical": 40,
+      "dropped_older_version": 11
+    },
+    "services_covered": [
+      "2p-revenue-optimizer-api",
+      "catalog-portfolio-api",
+      "demand-forecast-docs",
+      "order-workflow-api",
+      "payment-promise-gateway",
+      "price-engine-api",
+      "traffic-gate-api",
+      "unified-transaction-configs",
+      "vendor-stockkeeper-api",
+      "zenith-keeper"
+    ]
+  }
+}
